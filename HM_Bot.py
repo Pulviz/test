@@ -124,7 +124,7 @@ def recruit(user):
         send_msg(user, f"{i} : {candidats[i]}({get_name(candidats[i])})")
     answer = wait(user).object.message['text'].lower()
     if answer != "x":
-        open("admins.txt", "a").write(answer + "\n")
+        open("admins.txt", "a").write(candidats[int(answer)] + "\n")
         with open("probably_admins.txt", "w") as f:
             for c in candidats:
                 if c != candidats[int(answer)]:
@@ -161,7 +161,7 @@ def new_message(message, user):
             if int(c[:-4]) < today:
                 os.remove("days/" + c)
         return "Очистка завершена"
-    elif message.lower() == commands[5] and str(user) in open("admins.txt").readlines():
+    elif message.lower() == commands[5] and user == 586097800:
         recruit(user)
         return "Подтверждено"
     else:
