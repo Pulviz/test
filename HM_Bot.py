@@ -11,8 +11,7 @@ vk_group_id = 210986020
 vk_session = vk_api.VkApi(token=token)
 vk_session.get_api()
 longpool = VkBotLongPoll(vk_session, vk_group_id)
-adm = [708270480, 586097800, 558905265]
-commands = ["привет", "дз", "123", "расписание", "очистка"]
+commands = ["привет", "дз", "123", "расписание", "очистка", "admin"]
 timetable = {
     "русский язык": [1, 4],
     "алгебра": [2, 3, 4],
@@ -35,15 +34,15 @@ timetable = {
 
 
 def get_name(user):
-    request = requests.get("https://vk.com/id" + str(user))
-    bs = bs4.BeautifulSoup(request.text, "html.parser")
+    req = requests.get("https://vk.com/id" + str(user))
+    bs = bs4.BeautifulSoup(req.text, "html.parser")
     user_name = clean_all_tag_from_str(bs.findAll("title")[0])
     return user_name.split()[0]
 
 
 def get_time():
-    request = requests.get("https://my-calend.ru")
-    bs = bs4.BeautifulSoup(request.text, "html.parser")
+    req = requests.get("https://my-calend.ru")
+    bs = bs4.BeautifulSoup(req.text, "html.parser")
     time = clean_all_tag_from_str(str(bs.findAll("p"))).split()[3]
     result = ""
     for c in time:
@@ -81,6 +80,12 @@ def wait(user):
 def admin(user):
     send_msg(user, "Введите название предмета")
     subject = wait(user).object.message['text'].lower()
+    if subject == "английский язык" or subject == "информатика":
+        send_msg(user, "Введите вашу группу")
+        answer = wait(user).object.message['text'].lower()
+        if answer == "1":
+            timetable["английский язык"] = [1, 2, 3]
+            timetable["информатика"] = [5]
     if subject in timetable:
         week = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
         today = datetime.now().strftime("%A")
@@ -113,21 +118,39 @@ def read_files(file):
     return result
 
 
+def recruit(user):
+    candidats = open("probably_admins.txt").readlines()
+    for i in range(len(candidats)):
+        send_msg(user, f"{i} : {candidats[i]}")
+    answer = wait(user).object.message['text'].lower()
+    if answer != "x":
+        open("admins.txt", "a").write(answer + "\n")
+        with open("probably_admins.txt", "w") as f:
+            for c in candidats:
+                if c != candidats[answer]:
+                    f.write(c)
+
+
 def new_message(message, user):
     if message.lower() == commands[0]:
         return f"Привет, {get_name(user)}!"
     elif message.lower() == commands[1]:
-        if os.path.isfile(f"days/{str(get_time() + 1)}.txt"):
-            return read_files(f"days/{str(get_time() + 1)}")
+        i = 1
+        if datetime.now().strftime("%A") == "Friday":
+            i = 3
+        elif datetime.now().strftime("%A") == "Saturday":
+            i = 2
+        if os.path.isfile(f"days/{str(get_time() + i)}.txt"):
+            return read_files(f"days/{str(get_time() + i)}")
         else:
             return "Ничего не задано"
     elif message.lower() == commands[2]:
-        if user in adm:
+        if str(user) in open("admins.txt").readlines():
             admin(user)
             return "Подтвержденно"
         else:
-            with open(user_id, "a") as f:
-                f.write(str(user_id))
+            if user not in open("probably_admins.txt").readlines():
+                open("probably_admins.txt", "a").write(f"{str(user)}({get_name(user)})\n")
             return "Ожидайте подтверждения"
     elif message.lower() == commands[3]:
         return read_files("TT")
@@ -138,6 +161,9 @@ def new_message(message, user):
             if int(c[:-4]) < today:
                 os.remove("days/" + c)
         return "Очистка завершена"
+    elif message.lower() == commands[5] and str(user) in open("admins.txt").readlines():
+        recruit(user)
+        return "Подтверждено"
     else:
         return "???"
 
@@ -149,9 +175,7 @@ while True:
             if event.type == VkBotEventType.MESSAGE_NEW:
                 request = event.object.message['text']
                 user_id = event.object.message['from_id']
-                print("New message:")
-                print(f"For me by: {user_id}")
+                print(f"{user_id} : {request}")
                 send_msg(user_id, new_message(request, user_id))
-                print("Text: ", request)
     except Exception as e:
         print(e)
