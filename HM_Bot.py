@@ -121,13 +121,13 @@ def read_files(file):
 def recruit(user):
     candidats = open("probably_admins.txt").readlines()
     for i in range(len(candidats)):
-        send_msg(user, f"{i} : {candidats[i]}")
+        send_msg(user, f"{i} : {candidats[i]}({get_name(candidats[i])})")
     answer = wait(user).object.message['text'].lower()
     if answer != "x":
         open("admins.txt", "a").write(answer + "\n")
         with open("probably_admins.txt", "w") as f:
             for c in candidats:
-                if c != candidats[answer]:
+                if c != candidats[int(answer)]:
                     f.write(c)
 
 
@@ -150,7 +150,7 @@ def new_message(message, user):
             return "Подтвержденно"
         else:
             if user not in open("probably_admins.txt").readlines():
-                open("probably_admins.txt", "a").write(f"{str(user)}({get_name(user)})\n")
+                open("probably_admins.txt", "a").write(str(user) + "\n")
             return "Ожидайте подтверждения"
     elif message.lower() == commands[3]:
         return read_files("TT")
