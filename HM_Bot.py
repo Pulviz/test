@@ -12,6 +12,17 @@ vk_session = vk_api.VkApi(token=token)
 vk_session.get_api()
 longpool = VkBotLongPoll(vk_session, vk_group_id)
 commands = ["привет", "дз", "123", "расписание", "очистка", "admin"]
+admins = open("admins.txt").readlines()
+for i in range(len(admins)):
+    num = admins[i]
+    if "\n" in num:
+        admins[i] = num[:-1]
+probably_admins = open("probably_admins.txt").readlines()
+for i in range(len(probably_admins)):
+    num = probably_admins[i]
+    if "\n" in num:
+        if num not in admins:
+            probably_admins[i] = num[:-1]
 timetable = {
     "русский язык": [1, 4],
     "алгебра": [2, 3, 4],
@@ -105,7 +116,7 @@ def admin(user):
         with open(f"days/{day}.txt", arg) as f:
             send_msg(user, "Введите домашние задание")
             f.write(f"{subject}: {str(wait(user).object.message['text'])}\n")
-    else:
+    elif subject != "x":
         send_msg(user, "Предмет введен неверно")
         admin(user)
 
@@ -119,9 +130,9 @@ def read_files(file):
 
 
 def recruit(user):
-    candidats = open("probably_admins.txt").readlines()
+    candidats = probably_admins
     for i in range(len(candidats)):
-        send_msg(user, f"{i} : {candidats[i]}({get_name(candidats[i])})")
+        send_msg(user, f"{i} : {candidats[i]}")
     answer = wait(user).object.message['text'].lower()
     if answer != "x":
         open("admins.txt", "a").write(candidats[int(answer)] + "\n")
@@ -132,9 +143,9 @@ def recruit(user):
 
 
 def new_message(message, user):
-    if message.lower() == commands[0]:
+    if message.lower() == commands[0]:                                  #Привет
         return f"Привет, {get_name(user)}!"
-    elif message.lower() == commands[1]:
+    elif message.lower() == commands[1]:                                #ДЗ
         i = 1
         if datetime.now().strftime("%A") == "Friday":
             i = 3
@@ -144,31 +155,31 @@ def new_message(message, user):
             return read_files(f"days/{str(get_time() + i)}")
         else:
             return "Ничего не задано"
-    elif message.lower() == commands[2]:
-        if str(user) in open("admins.txt").readlines():
+    elif message.lower() == commands[2]:                                #123
+        if str(user) in admins:
             admin(user)
             return "Подтвержденно"
         else:
-            if user not in open("probably_admins.txt").readlines():
+            if str(user) not in probably_admins:
                 open("probably_admins.txt", "a").write(str(user) + "\n")
             return "Ожидайте подтверждения"
-    elif message.lower() == commands[3]:
+    elif message.lower() == commands[3]:                                #Расписание
         return read_files("TT")
-    elif message.lower() == commands[4]:
+    elif message.lower() == commands[4]:                                #Очистка
         files = os.listdir("days")
         today = get_time()
         for c in files:
             if int(c[:-4]) < today:
                 os.remove("days/" + c)
         return "Очистка завершена"
-    elif message.lower() == commands[5] and user == 586097800:
+    elif message.lower() == commands[5] and user == 586097800:          #admin
         recruit(user)
         return "Подтверждено"
     else:
         return "???"
 
 
-print("Server started")
+print("Successful")
 while True:
     try:
         for event in longpool.listen():
